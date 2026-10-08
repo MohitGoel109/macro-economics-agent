@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Macro Strategy Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f6f7;--ink:#10222f;--mute:#5a6b77;--line:#d3dde2;--accent:#0b6e6e;--good:#2e7d4f;--bad:#b3392b;--panel:#fff}
+@media (prefers-color-scheme:dark){:root{--bg:#0e1a22;--ink:#e6eef2;--mute:#8da0ad;--line:#26394a;--accent:#4fc3c3;--good:#6fcf97;--bad:#ef8a7d;--panel:#142531}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Instrument Sans",system-ui,sans-serif}
+main{max-width:1080px;margin:0 auto;padding:40px 20px 80px}
+h1{font:700 clamp(2rem,5vw,3.4rem)/1.05 Newsreader,Georgia,serif;margin:0 0 12px;max-width:16ch}
+h2{font:700 1.5rem Newsreader,Georgia,serif;margin:48px 0 12px}
+.lede{color:var(--mute);max-width:60ch;margin:0 0 8px}
+.banner{background:var(--bad);color:#fff;padding:8px 14px;border-radius:4px;margin:16px 0;display:none}
+table{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line)}
+th,td{padding:10px 14px;text-align:right;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums}
+th:first-child,td:first-child{text-align:left}th{font-weight:600;color:var(--mute);font-size:.9rem}
+tr.model td{font-weight:600;color:var(--accent)}
+.wrap{overflow-x:auto}
+.picks{display:grid;gap:8px;padding:0;list-style:none;margin:0}
+.picks li{background:var(--panel);border-left:4px solid var(--accent);padding:10px 14px;display:flex;justify-content:space-between;gap:12px}
+.picks code{font-size:.9rem}
+.charts{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(min(100%,480px),1fr))}
+figure{margin:0;background:var(--panel);border:1px solid var(--line);padding:10px}figure img{width:100%;height:auto;display:block}
+figure.wide{grid-column:1/-1}
+pre{white-space:pre-wrap;background:var(--panel);border:1px solid var(--line);padding:16px;max-width:80ch;font:inherit}
+.err{color:var(--bad)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Which strategy settings fit the next macro week?</h1>
+  <p class="lede">Walk-forward results for 24 SPY strategy permutations, driven by CPI, FOMC and jobs-report surprises.</p>
+  <div class="banner" id="synthetic">Synthetic data: pipeline test only, not real results.</div>
+  <p class="err" id="error"></p>
+
+  <h2>Out-of-sample performance</h2>
+  <div class="wrap"><table id="stats"><thead><tr><th>Strategy</th><th>Total return</th><th>Sharpe</th><th>Sortino</th><th>Max drawdown</th><th>Hit rate</th></tr></thead><tbody></tbody></table></div>
+
+  <h2>Model picks for the coming 5 trading days</h2>
+  <ul class="picks" id="picks"></ul>
+
+  <h2>Macro sentiment over time</h2>
+  <div class="charts">
+    <figure class="wide"><img id="c1" alt="Macro sentiment timeline"></figure>
+    <figure><img id="c2" alt="Equity curves and drawdown for model and baselines"></figure>
+    <figure><img id="c3" alt="Heatmap of strategy P&L by upcoming event type"></figure>
+    <figure><img id="c4" alt="Predicted versus actual P&L"></figure>
+  </div>
+
+  <h2>Macro outlook</h2>
+  <pre id="summary">Loading…</pre>
+</main>
+<script src="config.js"></script>
+<script>
+const A = window.API_URL, pct = x => (x*100).toFixed(1)+"%", n2 = x => Number(x).toFixed(2);
+const names = {model:"Model (top-3)",hist_best:"Historically best",equal_weight:"Equal weight",spy_buy_hold:"SPY buy & hold"};
+fetch(A+"/api/metrics").then(r=>{if(!r.ok)throw new Error("API returned "+r.status);return r.json()}).then(m=>{
+  document.getElementById("synthetic").style.display = m.synthetic ? "block" : "none";
+  document.querySelector("#stats tbody").innerHTML = Object.entries(m.stats).map(([k,v])=>
+    `<tr class="${k==='model'?'model':''}"><td>${names[k]||k}</td><td>${pct(v.total_return)}</td><td>${n2(v.sharpe)}</td><td>${n2(v.sortino)}</td><td>${pct(v.max_drawdown)}</td><td>${Math.round(v.hit_rate*100)}%</td></tr>`).join("");
+  document.getElementById("picks").innerHTML = m.latest_picks.map(p=>`<li><code>${p.perm_id}</code><span>${(p.pred*100>=0?"+":"")+(p.pred*100).toFixed(2)}% predicted</span></li>`).join("");
+}).catch(e=>{document.getElementById("error").textContent="Could not load results from "+A+". "+e.message+". If the API is on Render's free plan, wait about a minute for it to wake up and reload."});
+["sentiment_timeline","equity_curves","strategy_event_heatmap","pred_vs_actual"].forEach((c,i)=>document.getElementById("c"+(i+1)).src=A+"/charts/"+c+".png");
+fetch(A+"/api/summary").then(r=>r.text()).then(t=>document.getElementById("summary").textContent=t).catch(()=>{});
+</script>
+</body>
+</html>
