@@ -36,6 +36,7 @@ def parse_events(items):
     df = pd.DataFrame(items)
     if df.empty:
         return df
+    df = df.dropna(subset=["event", "date"])   # drop actor error records
     t = df["time"].where(df["time"].astype(str).str.fullmatch(r"\d{1,2}:\d{2}"), "00:00")
     df["ts_utc"] = pd.to_datetime(df["date"] + " " + t, format="%d/%m/%Y %H:%M", utc=True)
     df["ts_est"] = df["ts_utc"].dt.tz_convert("America/New_York")  # EST/EDT aware
@@ -61,6 +62,7 @@ def scrape(end: date | None = None, dry_run=False):
     start = end - timedelta(days=LOOKBACK_DAYS)
     base = json.loads((ROOT / "config" / "apify_input.json").read_text())
     wins = list(_windows(start, end, CHUNK_DAYS))
+    wins = [w for w in wins if w[0] < w[1]]   # actor rejects single-day windows
     todo = [w for w in wins if not (RAW / f"calendar_{w[0]}_{w[1]}.json").exists()]
     est = len(todo) * CHUNK_DAYS / 7 * 16 * COST_PER_EVENT_USD
     print(f"{len(wins)} chunks, {len(todo)} not cached. Rough cost of remaining: ~${est:.2f}")
@@ -75,7 +77,7 @@ def scrape(end: date | None = None, dry_run=False):
         inp = {**base, "fromDate": a.isoformat(), "toDate": b.isoformat()}
         print(f"  scraping {a} -> {b} ...")
         run = client.actor(actor).call(run_input=inp)
-        items = list(client.dataset(run["defaultDatasetId"]).iterate_items())
+        items = list(client.dataset(run.default_dataset_id).iterate_items())
         (RAW / f"calendar_{a}_{b}.json").write_text(json.dumps(items))
         print(f"    {len(items)} events")
     return _load_cache()

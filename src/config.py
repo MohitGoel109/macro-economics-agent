@@ -23,7 +23,7 @@ PERIODS_PER_YEAR = 252 / HORIZON   # non-overlapping 5-day periods
 FAMILIES = {
     "FOMC": ["fomc", "fed interest rate", "federal funds", "fed chair", "powell"],
     "CPI": ["cpi", "consumer price"],
-    "EMPLOYMENT": ["nonfarm", "non-farm", "unemployment rate", "adp", "jobless", "payroll", "jolts"],
+    "EMPLOYMENT": ["nonfarm", "non-farm", "unemployment rate", "adp", "payroll", "jolts"],
 }
 # Events where a HIGHER-than-forecast print is bad for risk assets
 INVERSE = ["unemployment rate", "jobless claims", "continuing claims", "cpi", "ppi", "inflation"]

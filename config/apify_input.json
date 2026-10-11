@@ -1,8 +1,6 @@
 {
-  "timeZone": null,
-  "timeFilter": "time_only",
-  "importances": ["high"],
-  "country": ["united states"],
+  "importances": "high",
+  "country": "united states",
   "fromDate": "2026-09-28",
   "toDate": "2026-10-04"
 }

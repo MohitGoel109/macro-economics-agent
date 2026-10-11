@@ -56,3 +56,8 @@ src/visuals.py         charts
 src/summary.py         1-page macro outlook (template-based)
 api/  web/             optional FastAPI + static dashboard
 ```
+## Results note
+Over ~15 walk-forward periods the model did not beat the historically-best or SPY buy-and-hold baselines
+(Sharpe 0.16 vs 1.22 and 1.69). With this few periods the result is inconclusive, not evidence for or against
+an edge. The event tagging was corrected after inspecting the heatmap (weekly jobless claims had been
+mislabelled as employment events).
